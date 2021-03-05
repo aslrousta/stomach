@@ -1,0 +1,11 @@
+# Junk files
+.DS_Store
+*.swp
+*~
+
+# Project files
+.idea/
+.vscode/
+
+# Vendor dependencies
+vendor/
