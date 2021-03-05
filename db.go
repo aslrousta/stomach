@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"io/fs"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -64,4 +65,38 @@ func dbClose() {
 	if db != nil {
 		db.Close()
 	}
+}
+
+func dbCheckObjects(objects map[string]fs.FileInfo) (
+	changed []string,
+	deleted []string,
+	unstaged []string,
+	err error,
+) {
+	rows, err := db.Query("SELECT name, mode, mtime FROM objects WHERE deleted = 0")
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var name string
+		var mode, mtime int64
+		if err := rows.Scan(&name, &mode, &mtime); err != nil {
+			return nil, nil, nil, err
+		}
+		info, exists := objects[name]
+		if !exists {
+			deleted = append(deleted, name)
+		} else if int64(info.Mode()) != mode || info.ModTime().Unix() != mtime {
+			changed = append(changed, name)
+		}
+		delete(objects, name)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, nil, nil, err
+	}
+	for name := range objects {
+		unstaged = append(unstaged, name)
+	}
+	return changed, deleted, unstaged, nil
 }

@@ -3,6 +3,10 @@
 *.swp
 *~
 
+# Products
+.stomach
+stomach
+
 # Project files
 .idea/
 .vscode/
